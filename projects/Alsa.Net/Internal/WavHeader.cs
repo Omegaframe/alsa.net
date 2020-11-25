@@ -1,6 +1,6 @@
-﻿namespace Iot.Device.Media
+﻿namespace Alsa.Net.Internal
 {
-    internal struct WavHeader
+    struct WavHeader
     {
         public char[] ChunkId { get; set; }
 

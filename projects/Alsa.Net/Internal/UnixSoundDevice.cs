@@ -6,32 +6,32 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Iot.Device.Media
+namespace Alsa.Net.Internal
 {
     /// <summary>
     /// Represents a communications channel to a sound device running on Unix.
     /// </summary>
-    internal class UnixSoundDevice : SoundDevice
+    class UnixSoundDevice : ISoundDevice
     {
-        private IntPtr _playbackPcm;
-        private IntPtr _recordingPcm;
-        private IntPtr _mixer;
-        private IntPtr _elem;
-        private int _errorNum;
+        IntPtr _playbackPcm;
+        IntPtr _recordingPcm;
+        IntPtr _mixer;
+        IntPtr _elem;
+        int _errorNum;
 
-        private static readonly object playbackInitializationLock = new object();
-        private static readonly object recordingInitializationLock = new object();
-        private static readonly object mixerInitializationLock = new object();
+        static readonly object playbackInitializationLock = new object();
+        static readonly object recordingInitializationLock = new object();
+        static readonly object mixerInitializationLock = new object();
 
         /// <summary>
         /// The connection settings of the sound device.
         /// </summary>
-        public override SoundConnectionSettings Settings { get; }
+        public SoundConnectionSettings Settings { get; }
 
         /// <summary>
         /// The playback volume of the sound device.
         /// </summary>
-        public override long PlaybackVolume
+        public long PlaybackVolume
         {
             get => GetPlaybackVolume();
             set
@@ -41,11 +41,11 @@ namespace Iot.Device.Media
         }
 
         // The lib do not have a method of get all channels mute state.
-        private bool _playbackMute;
+        bool _playbackMute;
         /// <summary>
         /// The playback mute of the sound device.
         /// </summary>
-        public override bool PlaybackMute
+        public bool PlaybackMute
         {
             get => _playbackMute;
             set
@@ -58,13 +58,13 @@ namespace Iot.Device.Media
         /// <summary>
         /// The recording volume of the sound device.
         /// </summary>
-        public override long RecordingVolume { get => GetRecordingVolume(); set => SetRecordingVolume(value); }
+        public long RecordingVolume { get => GetRecordingVolume(); set => SetRecordingVolume(value); }
 
-        private bool _recordingMute;
+        bool _recordingMute;
         /// <summary>
         /// The recording mute of the sound device.
         /// </summary>
-        public override bool RecordingMute
+        public bool RecordingMute
         {
             get => _recordingMute;
             set
@@ -90,7 +90,7 @@ namespace Iot.Device.Media
         /// Play WAV file.
         /// </summary>
         /// <param name="wavPath">WAV file path.</param>
-        public override void Play(string wavPath)
+        public void Play(string wavPath)
         {
             using FileStream fs = File.Open(wavPath, FileMode.Open);
 
@@ -101,7 +101,7 @@ namespace Iot.Device.Media
         /// Play WAV file.
         /// </summary>
         /// <param name="wavStream">WAV stream.</param>
-        public override void Play(Stream wavStream)
+        public void Play(Stream wavStream)
         {
             IntPtr @params = new IntPtr();
             int dir = 0;
@@ -118,7 +118,7 @@ namespace Iot.Device.Media
         /// </summary>
         /// <param name="second">Recording duration(In seconds).</param>
         /// <param name="savePath">Recording save path.</param>
-        public override void Record(uint second, string savePath)
+        public void Record(uint second, string savePath)
         {
             using FileStream fs = File.Open(savePath, FileMode.Create);
 
@@ -130,7 +130,7 @@ namespace Iot.Device.Media
         /// </summary>
         /// <param name="second">Recording duration(In seconds).</param>
         /// <param name="saveStream">Recording save stream.</param>
-        public override void Record(uint second, Stream saveStream)
+        public void Record(uint second, Stream saveStream)
         {
             IntPtr @params = new IntPtr();
             int dir = 0;
@@ -159,7 +159,7 @@ namespace Iot.Device.Media
             CloseRecordingPcm();
         }
 
-        private void SetWavHeader(Stream wavStream, WavHeader header)
+        void SetWavHeader(Stream wavStream, WavHeader header)
         {
             Span<byte> writeBuffer2 = stackalloc byte[2];
             Span<byte> writeBuffer4 = stackalloc byte[4];
@@ -213,7 +213,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private WavHeader GetWavHeader(Stream wavStream)
+        WavHeader GetWavHeader(Stream wavStream)
         {
             Span<byte> readBuffer2 = stackalloc byte[2];
             Span<byte> readBuffer4 = stackalloc byte[4];
@@ -271,7 +271,7 @@ namespace Iot.Device.Media
             return header;
         }
 
-        private unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir)
+        unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir)
         {
             ulong frames, bufferSize;
 
@@ -297,7 +297,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private unsafe void ReadStream(Stream saveStream, WavHeader header, ref IntPtr @params, ref int dir)
+        unsafe void ReadStream(Stream saveStream, WavHeader header, ref IntPtr @params, ref int dir)
         {
             ulong frames, bufferSize;
 
@@ -324,7 +324,7 @@ namespace Iot.Device.Media
             saveStream.Flush();
         }
 
-        private unsafe void PcmInitialize(IntPtr pcm, WavHeader header, ref IntPtr @params, ref int dir)
+        unsafe void PcmInitialize(IntPtr pcm, WavHeader header, ref IntPtr @params, ref int dir)
         {
             _errorNum = InteropAlsa.snd_pcm_hw_params_malloc(ref @params);
             ThrowErrorMessage("Can not allocate parameters object.");
@@ -358,7 +358,7 @@ namespace Iot.Device.Media
             ThrowErrorMessage("Can not set hardware parameters.");
         }
 
-        private unsafe void SetPlaybackVolume(long volume)
+        unsafe void SetPlaybackVolume(long volume)
         {
             OpenMixer();
 
@@ -371,7 +371,7 @@ namespace Iot.Device.Media
             CloseMixer();
         }
 
-        private unsafe long GetPlaybackVolume()
+        unsafe long GetPlaybackVolume()
         {
             long volumeLeft, volumeRight;
 
@@ -386,7 +386,7 @@ namespace Iot.Device.Media
             return (volumeLeft + volumeRight) / 2;
         }
 
-        private unsafe void SetRecordingVolume(long volume)
+        unsafe void SetRecordingVolume(long volume)
         {
             OpenMixer();
 
@@ -397,7 +397,7 @@ namespace Iot.Device.Media
             CloseMixer();
         }
 
-        private unsafe long GetRecordingVolume()
+        unsafe long GetRecordingVolume()
         {
             long volumeLeft, volumeRight;
 
@@ -412,7 +412,7 @@ namespace Iot.Device.Media
             return (volumeLeft + volumeRight) / 2;
         }
 
-        private void SetPlaybackMute(bool isMute)
+        void SetPlaybackMute(bool isMute)
         {
             OpenMixer();
 
@@ -422,7 +422,7 @@ namespace Iot.Device.Media
             CloseMixer();
         }
 
-        private void SetRecordingMute(bool isMute)
+        void SetRecordingMute(bool isMute)
         {
             OpenMixer();
 
@@ -432,7 +432,7 @@ namespace Iot.Device.Media
             CloseMixer();
         }
 
-        private void OpenPlaybackPcm()
+        void OpenPlaybackPcm()
         {
             if (_playbackPcm != default)
             {
@@ -446,7 +446,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private void ClosePlaybackPcm()
+        void ClosePlaybackPcm()
         {
             if (_playbackPcm != default)
             {
@@ -460,7 +460,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private void OpenRecordingPcm()
+        void OpenRecordingPcm()
         {
             if (_recordingPcm != default)
             {
@@ -474,7 +474,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private void CloseRecordingPcm()
+        void CloseRecordingPcm()
         {
             if (_recordingPcm != default)
             {
@@ -488,7 +488,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private void OpenMixer()
+        void OpenMixer()
         {
             if (_mixer != default)
             {
@@ -513,7 +513,7 @@ namespace Iot.Device.Media
             }
         }
 
-        private void CloseMixer()
+        void CloseMixer()
         {
             if (_mixer != default)
             {
@@ -525,16 +525,14 @@ namespace Iot.Device.Media
             }
         }
 
-        protected override void Dispose(bool disposing)
+        public void Dispose()
         {
             ClosePlaybackPcm();
             CloseRecordingPcm();
             CloseMixer();
-
-            base.Dispose(disposing);
         }
 
-        private void ThrowErrorMessage(string message)
+        void ThrowErrorMessage(string message)
         {
             if (_errorNum < 0)
             {
@@ -546,12 +544,12 @@ namespace Iot.Device.Media
             }
         }
 
-        public override Task Record(string savePath, CancellationToken cancellationToken)
+        public Task Record(string savePath, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }
 
-        public override Task Record(Stream outputStream, CancellationToken cancellationToken)
+        public Task Record(Stream outputStream, CancellationToken cancellationToken)
         {
             throw new NotImplementedException();
         }

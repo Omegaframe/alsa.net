@@ -1,4 +1,4 @@
-﻿namespace Iot.Device.Media
+﻿namespace Alsa.Net
 {
     /// <summary>
     /// The connection settings of a sound device.
