@@ -4,6 +4,8 @@
 
 using System;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Iot.Device.Media
 {
@@ -62,6 +64,9 @@ namespace Iot.Device.Media
         /// <param name="second">Recording duration(In seconds).</param>
         /// <param name="savePath">Recording save path.</param>
         public abstract void Record(uint second, string savePath);
+
+        public abstract Task Record(string savePath, CancellationToken cancellationToken);
+        public abstract Task Record(Stream outputStream, CancellationToken cancellationToken);
 
         /// <summary>
         /// Sound recording.
