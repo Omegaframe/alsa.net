@@ -3,9 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29215.179
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Alsa", "Alsa\Alsa.csproj", "{8E1A4040-0E94-428A-9530-56E44E8C2EB2}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Alsa.Samples", "Alsa.Samples\Alsa.Samples.csproj", "{6CDBD01C-6EAD-47EB-A42D-382FF4B80872}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Alsa", "projects\Alsa.Net\Alsa.Net.csproj", "{8E1A4040-0E94-428A-9530-56E44E8C2EB2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

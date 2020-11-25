@@ -1,15 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-internal enum snd_pcm_stream_t
+﻿enum snd_pcm_stream_t
 {
     SND_PCM_STREAM_PLAYBACK = 0,
     SND_PCM_STREAM_CAPTURE = 1,
     SND_PCM_STREAM_LAST = SND_PCM_STREAM_CAPTURE,
 }
 
-internal enum snd_pcm_format_t
+enum snd_pcm_format_t
 {
     SND_PCM_FORMAT_UNKNOWN = -1,
     SND_PCM_FORMAT_S8 = 0,
@@ -62,7 +58,7 @@ internal enum snd_pcm_format_t
     SND_PCM_FORMAT_LAST = SND_PCM_FORMAT_DSD_U32_BE,
 }
 
-internal enum snd_pcm_access_t
+enum snd_pcm_access_t
 {
     SND_PCM_ACCESS_MMAP_INTERLEAVED = 0,
     SND_PCM_ACCESS_MMAP_NONINTERLEAVED = 1,
@@ -72,7 +68,7 @@ internal enum snd_pcm_access_t
     SND_PCM_ACCESS_LAST = SND_PCM_ACCESS_RW_NONINTERLEAVED,
 }
 
-internal enum snd_mixer_selem_channel_id
+enum snd_mixer_selem_channel_id
 {
     SND_MIXER_SCHN_UNKNOWN = -1,
     SND_MIXER_SCHN_FRONT_LEFT = 0,

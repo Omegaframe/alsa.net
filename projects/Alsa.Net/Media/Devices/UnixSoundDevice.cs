@@ -1,12 +1,10 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-using System;
+﻿using System;
 using System.Buffers.Binary;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Iot.Device.Media
 {
@@ -279,7 +277,7 @@ namespace Iot.Device.Media
 
             fixed (int* dirP = &dir)
             {
-                _errorNum = Interop.snd_pcm_hw_params_get_period_size(@params, &frames, dirP);
+                _errorNum = InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP);
                 ThrowErrorMessage("Can not get period size.");
             }
 
@@ -293,7 +291,7 @@ namespace Iot.Device.Media
             {
                 while (wavStream.Read(readBuffer) != 0)
                 {
-                    _errorNum = Interop.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames);
+                    _errorNum = InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames);
                     ThrowErrorMessage("Can not write data to the device.");
                 }
             }
@@ -305,7 +303,7 @@ namespace Iot.Device.Media
 
             fixed (int* dirP = &dir)
             {
-                _errorNum = Interop.snd_pcm_hw_params_get_period_size(@params, &frames, dirP);
+                _errorNum = InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP);
                 ThrowErrorMessage("Can not get period size.");
             }
 
@@ -317,7 +315,7 @@ namespace Iot.Device.Media
             {
                 for (int i = 0; i < (int)(header.Subchunk2Size / bufferSize); i++)
                 {
-                    _errorNum = Interop.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames);
+                    _errorNum = InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames);
                     ThrowErrorMessage("Can not read data from the device.");
 
                     saveStream.Write(readBuffer);
@@ -328,35 +326,35 @@ namespace Iot.Device.Media
 
         private unsafe void PcmInitialize(IntPtr pcm, WavHeader header, ref IntPtr @params, ref int dir)
         {
-            _errorNum = Interop.snd_pcm_hw_params_malloc(ref @params);
+            _errorNum = InteropAlsa.snd_pcm_hw_params_malloc(ref @params);
             ThrowErrorMessage("Can not allocate parameters object.");
 
-            _errorNum = Interop.snd_pcm_hw_params_any(pcm, @params);
+            _errorNum = InteropAlsa.snd_pcm_hw_params_any(pcm, @params);
             ThrowErrorMessage("Can not fill parameters object.");
 
-            _errorNum = Interop.snd_pcm_hw_params_set_access(pcm, @params, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
+            _errorNum = InteropAlsa.snd_pcm_hw_params_set_access(pcm, @params, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
             ThrowErrorMessage("Can not set access mode.");
 
             _errorNum = (int)(header.BitsPerSample / 8) switch
             {
-                1 => Interop.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_U8),
-                2 => Interop.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S16_LE),
-                3 => Interop.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S24_LE),
+                1 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_U8),
+                2 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S16_LE),
+                3 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S24_LE),
                 _ => throw new Exception("Bits per sample error. Please reset the value of RecordingBitsPerSample."),
             };
             ThrowErrorMessage("Can not set format.");
 
-            _errorNum = Interop.snd_pcm_hw_params_set_channels(pcm, @params, header.NumChannels);
+            _errorNum = InteropAlsa.snd_pcm_hw_params_set_channels(pcm, @params, header.NumChannels);
             ThrowErrorMessage("Can not set channel.");
 
             uint val = header.SampleRate;
             fixed (int* dirP = &dir)
             {
-                _errorNum = Interop.snd_pcm_hw_params_set_rate_near(pcm, @params, &val, dirP);
+                _errorNum = InteropAlsa.snd_pcm_hw_params_set_rate_near(pcm, @params, &val, dirP);
                 ThrowErrorMessage("Can not set rate.");
             }
 
-            _errorNum = Interop.snd_pcm_hw_params(pcm, @params);
+            _errorNum = InteropAlsa.snd_pcm_hw_params(pcm, @params);
             ThrowErrorMessage("Can not set hardware parameters.");
         }
 
@@ -366,8 +364,8 @@ namespace Iot.Device.Media
 
             // The snd_mixer_selem_set_playback_volume_all method in Raspberry Pi is invalid.
             // So here we adjust the volume by setting the left and right channels separately.
-            _errorNum = Interop.snd_mixer_selem_set_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume);
-            _errorNum = Interop.snd_mixer_selem_set_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume);
+            _errorNum = InteropAlsa.snd_mixer_selem_set_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume);
+            _errorNum = InteropAlsa.snd_mixer_selem_set_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume);
             ThrowErrorMessage("Set playback volume error.");
 
             CloseMixer();
@@ -379,8 +377,8 @@ namespace Iot.Device.Media
 
             OpenMixer();
 
-            _errorNum = Interop.snd_mixer_selem_get_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft);
-            _errorNum = Interop.snd_mixer_selem_get_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight);
+            _errorNum = InteropAlsa.snd_mixer_selem_get_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft);
+            _errorNum = InteropAlsa.snd_mixer_selem_get_playback_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight);
             ThrowErrorMessage("Get playback volume error.");
 
             CloseMixer();
@@ -392,8 +390,8 @@ namespace Iot.Device.Media
         {
             OpenMixer();
 
-            _errorNum = Interop.snd_mixer_selem_set_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume);
-            _errorNum = Interop.snd_mixer_selem_set_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume);
+            _errorNum = InteropAlsa.snd_mixer_selem_set_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume);
+            _errorNum = InteropAlsa.snd_mixer_selem_set_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume);
             ThrowErrorMessage("Set recording volume error.");
 
             CloseMixer();
@@ -405,8 +403,8 @@ namespace Iot.Device.Media
 
             OpenMixer();
 
-            _errorNum = Interop.snd_mixer_selem_get_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft);
-            _errorNum = Interop.snd_mixer_selem_get_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight);
+            _errorNum = InteropAlsa.snd_mixer_selem_get_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft);
+            _errorNum = InteropAlsa.snd_mixer_selem_get_capture_volume(_elem, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight);
             ThrowErrorMessage("Get recording volume error.");
 
             CloseMixer();
@@ -418,7 +416,7 @@ namespace Iot.Device.Media
         {
             OpenMixer();
 
-            _errorNum = Interop.snd_mixer_selem_set_playback_switch_all(_elem, isMute ? 0 : 1);
+            _errorNum = InteropAlsa.snd_mixer_selem_set_playback_switch_all(_elem, isMute ? 0 : 1);
             ThrowErrorMessage("Set playback mute error.");
 
             CloseMixer();
@@ -428,7 +426,7 @@ namespace Iot.Device.Media
         {
             OpenMixer();
 
-            _errorNum = Interop.snd_mixer_selem_set_playback_switch_all(_elem, isMute ? 0 : 1);
+            _errorNum = InteropAlsa.snd_mixer_selem_set_playback_switch_all(_elem, isMute ? 0 : 1);
             ThrowErrorMessage("Set recording mute error.");
 
             CloseMixer();
@@ -443,7 +441,7 @@ namespace Iot.Device.Media
 
             lock (playbackInitializationLock)
             {
-                _errorNum = Interop.snd_pcm_open(ref _playbackPcm, Settings.PlaybackDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0);
+                _errorNum = InteropAlsa.snd_pcm_open(ref _playbackPcm, Settings.PlaybackDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0);
                 ThrowErrorMessage("Can not open playback device.");
             }
         }
@@ -452,10 +450,10 @@ namespace Iot.Device.Media
         {
             if (_playbackPcm != default)
             {
-                _errorNum = Interop.snd_pcm_drop(_playbackPcm);
+                _errorNum = InteropAlsa.snd_pcm_drop(_playbackPcm);
                 ThrowErrorMessage("Drop playback device error.");
 
-                _errorNum = Interop.snd_pcm_close(_playbackPcm);
+                _errorNum = InteropAlsa.snd_pcm_close(_playbackPcm);
                 ThrowErrorMessage("Close playback device error.");
 
                 _playbackPcm = default;
@@ -471,7 +469,7 @@ namespace Iot.Device.Media
 
             lock (recordingInitializationLock)
             {
-                _errorNum = Interop.snd_pcm_open(ref _recordingPcm, Settings.RecordingDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_CAPTURE, 0);
+                _errorNum = InteropAlsa.snd_pcm_open(ref _recordingPcm, Settings.RecordingDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_CAPTURE, 0);
                 ThrowErrorMessage("Can not open recording device.");
             }
         }
@@ -480,10 +478,10 @@ namespace Iot.Device.Media
         {
             if (_recordingPcm != default)
             {
-                _errorNum = Interop.snd_pcm_drop(_recordingPcm);
+                _errorNum = InteropAlsa.snd_pcm_drop(_recordingPcm);
                 ThrowErrorMessage("Drop recording device error.");
 
-                _errorNum = Interop.snd_pcm_close(_recordingPcm);
+                _errorNum = InteropAlsa.snd_pcm_close(_recordingPcm);
                 ThrowErrorMessage("Close recording device error.");
 
                 _recordingPcm = default;
@@ -499,19 +497,19 @@ namespace Iot.Device.Media
 
             lock (mixerInitializationLock)
             {
-                _errorNum = Interop.snd_mixer_open(ref _mixer, 0);
+                _errorNum = InteropAlsa.snd_mixer_open(ref _mixer, 0);
                 ThrowErrorMessage("Can not open sound device mixer.");
 
-                _errorNum = Interop.snd_mixer_attach(_mixer, Settings.MixerDeviceName);
+                _errorNum = InteropAlsa.snd_mixer_attach(_mixer, Settings.MixerDeviceName);
                 ThrowErrorMessage("Can not attach sound device mixer.");
 
-                _errorNum = Interop.snd_mixer_selem_register(_mixer, IntPtr.Zero, IntPtr.Zero);
+                _errorNum = InteropAlsa.snd_mixer_selem_register(_mixer, IntPtr.Zero, IntPtr.Zero);
                 ThrowErrorMessage("Can not register sound device mixer.");
 
-                _errorNum = Interop.snd_mixer_load(_mixer);
+                _errorNum = InteropAlsa.snd_mixer_load(_mixer);
                 ThrowErrorMessage("Can not load sound device mixer.");
 
-                _elem = Interop.snd_mixer_first_elem(_mixer);
+                _elem = InteropAlsa.snd_mixer_first_elem(_mixer);
             }
         }
 
@@ -519,7 +517,7 @@ namespace Iot.Device.Media
         {
             if (_mixer != default)
             {
-                _errorNum = Interop.snd_mixer_close(_mixer);
+                _errorNum = InteropAlsa.snd_mixer_close(_mixer);
                 ThrowErrorMessage("Close sound device mixer error.");
 
                 _mixer = default;
@@ -541,11 +539,21 @@ namespace Iot.Device.Media
             if (_errorNum < 0)
             {
                 int code = _errorNum;
-                string errorMsg = Marshal.PtrToStringAnsi(Interop.snd_strerror(_errorNum));
+                string errorMsg = Marshal.PtrToStringAnsi(InteropAlsa.snd_strerror(_errorNum));
 
                 Dispose();
                 throw new Exception($"{message}\nError {code}. {errorMsg}.");
             }
+        }
+
+        public override Task Record(string savePath, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override Task Record(Stream outputStream, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 }
