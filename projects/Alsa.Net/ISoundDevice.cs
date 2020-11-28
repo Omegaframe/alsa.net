@@ -1,65 +1,70 @@
 ﻿using System;
 using System.IO;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Alsa.Net
 {
     /// <summary>
-    /// The communications channel to a sound device.
+    /// virtual sound interface connected to configured hardware devices
     /// </summary>
     public interface ISoundDevice : IDisposable
-    {        
+    {
         /// <summary>
-        /// The connection settings of the sound device.
+        /// sound device settings like playback-, mixer- or recording device
         /// </summary>
-        SoundConnectionSettings Settings { get; }
+        SoundDeviceSettings Settings { get; }
 
         /// <summary>
-        /// The playback volume of the sound device.
+        /// set or get the volume of the playback device
         /// </summary>
         long PlaybackVolume { get; set; }
 
         /// <summary>
-        /// The playback mute of the sound device.
+        /// mute / unmute the playback device or get the current state
         /// </summary>
         bool PlaybackMute { get; set; }
 
         /// <summary>
-        /// The recording volume of the sound device.
+        /// set or get the current recording volume
         /// </summary>
         long RecordingVolume { get; set; }
 
         /// <summary>
-        /// The recording mute of the sound device.
+        /// mute / unmute the recording device or get the current state
         /// </summary>
         bool RecordingMute { get; set; }
 
         /// <summary>
-        /// Play WAV file.
+        /// play a wav file on the playback devce
         /// </summary>
-        /// <param name="wavPath">WAV file path.</param>
+        /// <param name="wavPath">path to wav file</param>
         void Play(string wavPath);
 
         /// <summary>
-        /// Play WAV file.
+        /// play a wav stream
         /// </summary>
-        /// <param name="wavStream">WAV stream.</param>
+        /// <param name="wavStream">stream of wav data to play</param>
         void Play(Stream wavStream);
 
         /// <summary>
-        /// Sound recording.
+        /// record a wav file to the given path and length 
         /// </summary>
-        /// <param name="second">Recording duration(In seconds).</param>
-        /// <param name="savePath">Recording save path.</param>
+        /// <param name="second">recording duration in seconds</param>
+        /// <param name="savePath">path to store the file to</param>
         void Record(uint second, string savePath);
+
+        /// <summary>
+        /// record wave data to the given stream until cancellation
+        /// </summary>
+        /// <param name="outputStream">stream to write wav data to</param>
+        /// <param name="cancellationToken">token to cancel the recording</param>
         void Record(Stream outputStream, CancellationToken cancellationToken);
 
         /// <summary>
-        /// Sound recording.
+        /// record wave data to the given stream with the given duration
         /// </summary>
-        /// <param name="second">Recording duration(In seconds).</param>
-        /// <param name="saveStream">Recording save stream.</param>
+        /// <param name="second">recording duration in seconds</param>
+        /// <param name="saveStream">stream to write the wav data to</param>
         void Record(uint second, Stream saveStream);
     }
 }

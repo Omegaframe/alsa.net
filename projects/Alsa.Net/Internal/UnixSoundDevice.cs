@@ -5,16 +5,13 @@ using System.Threading;
 
 namespace Alsa.Net.Internal
 {
-    /// <summary>
-    /// Represents a communications channel to a sound device running on Unix.
-    /// </summary>
     class UnixSoundDevice : ISoundDevice
     {
         static readonly object playbackInitializationLock = new object();
         static readonly object recordingInitializationLock = new object();
         static readonly object mixerInitializationLock = new object();
 
-        public SoundConnectionSettings Settings { get; }
+        public SoundDeviceSettings Settings { get; }
         public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
         public bool PlaybackMute { get => _playbackMute; set => SetPlaybackMute(value); }
         public long RecordingVolume { get => GetRecordingVolume(); set => SetRecordingVolume(value); }
@@ -28,7 +25,7 @@ namespace Alsa.Net.Internal
         IntPtr _elem;
         int _errorNum;
 
-        public UnixSoundDevice(SoundConnectionSettings settings)
+        public UnixSoundDevice(SoundDeviceSettings settings)
         {
             Settings = settings;
             PlaybackMute = false;

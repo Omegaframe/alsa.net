@@ -1,37 +1,34 @@
 ﻿namespace Alsa.Net
 {
-    /// <summary>
-    /// The connection settings of a sound device.
-    /// </summary>
-    public class SoundConnectionSettings
+    public class SoundDeviceSettings
     {
         /// <summary>
-        /// The playback device name of the sound device is connected to.
+        /// The name of the playback device to use. Default: "default"
         /// </summary>
         public string PlaybackDeviceName { get; set; } = "default";
 
         /// <summary>
-        /// The recording device name of the sound device is connected to.
+        /// The name of the recording device to use. Default: "default"
         /// </summary>
         public string RecordingDeviceName { get; set; } = "default";
 
         /// <summary>
-        /// The mixer device name of the sound device is connected to.
+        /// The name of the mixer device to use. Default: "default"
         /// </summary>
         public string MixerDeviceName { get; set; } = "default";
 
         /// <summary>
-        /// The sample rate of recording.
+        /// The sample rate to use for recording. Default: 8000
         /// </summary>
         public uint RecordingSampleRate { get; set; } = 8000;
 
         /// <summary>
-        /// The channels of recording. 
+        /// The number of chanels to use for recording. Default: 2
         /// </summary>
         public ushort RecordingChannels { get; set; } = 2;
 
         /// <summary>
-        /// The bits per sample of recording.
+        /// The number of bits per sample to use for recording. Default: 16
         /// </summary>
         public ushort RecordingBitsPerSample { get; set; } = 16;
     }

@@ -5,10 +5,11 @@ namespace Alsa.Net
     public static class AlsaDeviceBuilder
     {
         /// <summary>
-        /// Create a communications channel to a sound device running on Unix.
+        /// create and connect a sound device.
+        /// use <see cref="SoundDeviceSettings"/> for parameter set up.
         /// </summary>
-        /// <param name="settings">The connection settings of a sound device.</param>
-        /// <returns>A communications channel to a sound device running on Unix.</returns>
-        public static ISoundDevice Create(SoundConnectionSettings settings) => new UnixSoundDevice(settings);
+        /// <param name="settings">sound device configuration to use</param>
+        /// <returns>sound device ready to use</returns>
+        public static ISoundDevice Create(SoundDeviceSettings settings) => new UnixSoundDevice(settings);
     }
 }
