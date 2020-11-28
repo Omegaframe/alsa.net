@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Buffers.Binary;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Alsa.Net.Internal
 {
@@ -13,99 +10,42 @@ namespace Alsa.Net.Internal
     /// </summary>
     class UnixSoundDevice : ISoundDevice
     {
+        static readonly object playbackInitializationLock = new object();
+        static readonly object recordingInitializationLock = new object();
+        static readonly object mixerInitializationLock = new object();
+
+        public SoundConnectionSettings Settings { get; }
+        public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
+        public bool PlaybackMute { get => _playbackMute; set => SetPlaybackMute(value); }
+        public long RecordingVolume { get => GetRecordingVolume(); set => SetRecordingVolume(value); }
+        public bool RecordingMute { get => _recordingMute; set => SetRecordingMute(value); }
+
+        bool _playbackMute;
+        bool _recordingMute;
         IntPtr _playbackPcm;
         IntPtr _recordingPcm;
         IntPtr _mixer;
         IntPtr _elem;
         int _errorNum;
 
-        static readonly object playbackInitializationLock = new object();
-        static readonly object recordingInitializationLock = new object();
-        static readonly object mixerInitializationLock = new object();
-
-        /// <summary>
-        /// The connection settings of the sound device.
-        /// </summary>
-        public SoundConnectionSettings Settings { get; }
-
-        /// <summary>
-        /// The playback volume of the sound device.
-        /// </summary>
-        public long PlaybackVolume
-        {
-            get => GetPlaybackVolume();
-            set
-            {
-                SetPlaybackVolume(value);
-            }
-        }
-
-        // The lib do not have a method of get all channels mute state.
-        bool _playbackMute;
-        /// <summary>
-        /// The playback mute of the sound device.
-        /// </summary>
-        public bool PlaybackMute
-        {
-            get => _playbackMute;
-            set
-            {
-                SetPlaybackMute(value);
-                _playbackMute = value;
-            }
-        }
-
-        /// <summary>
-        /// The recording volume of the sound device.
-        /// </summary>
-        public long RecordingVolume { get => GetRecordingVolume(); set => SetRecordingVolume(value); }
-
-        bool _recordingMute;
-        /// <summary>
-        /// The recording mute of the sound device.
-        /// </summary>
-        public bool RecordingMute
-        {
-            get => _recordingMute;
-            set
-            {
-                SetRecordingMute(value);
-                _recordingMute = value;
-            }
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="UnixSoundDevice"/> class that will use the specified settings to communicate with the sound device.
-        /// </summary>
-        /// <param name="settings">The connection settings of a sound device.</param>
         public UnixSoundDevice(SoundConnectionSettings settings)
         {
             Settings = settings;
-
             PlaybackMute = false;
             RecordingMute = false;
         }
 
-        /// <summary>
-        /// Play WAV file.
-        /// </summary>
-        /// <param name="wavPath">WAV file path.</param>
         public void Play(string wavPath)
         {
-            using FileStream fs = File.Open(wavPath, FileMode.Open);
-
+            using FileStream fs = File.Open(wavPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             Play(fs);
         }
 
-        /// <summary>
-        /// Play WAV file.
-        /// </summary>
-        /// <param name="wavStream">WAV stream.</param>
         public void Play(Stream wavStream)
         {
-            IntPtr @params = new IntPtr();
-            int dir = 0;
-            WavHeader header = GetWavHeader(wavStream);
+            var @params = new IntPtr();
+            var dir = 0;
+            var header = WavHeader.FromStream(wavStream);
 
             OpenPlaybackPcm();
             PcmInitialize(_playbackPcm, header, ref @params, ref dir);
@@ -113,162 +53,31 @@ namespace Alsa.Net.Internal
             ClosePlaybackPcm();
         }
 
-        /// <summary>
-        /// Sound recording.
-        /// </summary>
-        /// <param name="second">Recording duration(In seconds).</param>
-        /// <param name="savePath">Recording save path.</param>
         public void Record(uint second, string savePath)
         {
-            using FileStream fs = File.Open(savePath, FileMode.Create);
-
+            using FileStream fs = File.Open(savePath, FileMode.Create, FileAccess.Write, FileShare.None);
             Record(second, fs);
         }
 
-        /// <summary>
-        /// Sound recording.
-        /// </summary>
-        /// <param name="second">Recording duration(In seconds).</param>
-        /// <param name="saveStream">Recording save stream.</param>
         public void Record(uint second, Stream saveStream)
         {
-            IntPtr @params = new IntPtr();
-            int dir = 0;
-            WavHeader header = new WavHeader
-            {
-                ChunkId = new[] { 'R', 'I', 'F', 'F' },
-                ChunkSize = second * Settings.RecordingSampleRate * Settings.RecordingBitsPerSample * Settings.RecordingChannels / 8 + 36,
-                Format = new[] { 'W', 'A', 'V', 'E' },
-                Subchunk1ID = new[] { 'f', 'm', 't', ' ' },
-                Subchunk1Size = 16,
-                AudioFormat = 1,
-                NumChannels = Settings.RecordingChannels,
-                SampleRate = Settings.RecordingSampleRate,
-                ByteRate = Settings.RecordingSampleRate * Settings.RecordingBitsPerSample * Settings.RecordingChannels / 8,
-                BlockAlign = (ushort)(Settings.RecordingBitsPerSample * Settings.RecordingChannels / 8),
-                BitsPerSample = Settings.RecordingBitsPerSample,
-                Subchunk2Id = new[] { 'd', 'a', 't', 'a' },
-                Subchunk2Size = second * Settings.RecordingSampleRate * Settings.RecordingBitsPerSample * Settings.RecordingChannels / 8
-            };
+            using var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(second));
+            Record(saveStream, tokenSource.Token);
+        }
 
-            SetWavHeader(saveStream, header);
+        public void Record(Stream saveStream, CancellationToken token)
+        {
+            const uint second = 60; // 60s chunk size
 
+            var @params = new IntPtr();
+            var dir = 0;
+            var header = WavHeader.Build(second, Settings.RecordingSampleRate, Settings.RecordingChannels, Settings.RecordingBitsPerSample);
+
+            header.WriteToStream(saveStream);
             OpenRecordingPcm();
             PcmInitialize(_recordingPcm, header, ref @params, ref dir);
-            ReadStream(saveStream, header, ref @params, ref dir);
+            ReadStream(saveStream, header, ref @params, ref dir, token);
             CloseRecordingPcm();
-        }
-
-        void SetWavHeader(Stream wavStream, WavHeader header)
-        {
-            Span<byte> writeBuffer2 = stackalloc byte[2];
-            Span<byte> writeBuffer4 = stackalloc byte[4];
-
-            wavStream.Position = 0;
-
-            try
-            {
-                Encoding.ASCII.GetBytes(header.ChunkId, writeBuffer4);
-                wavStream.Write(writeBuffer4);
-
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, header.ChunkSize);
-                wavStream.Write(writeBuffer4);
-
-                Encoding.ASCII.GetBytes(header.Format, writeBuffer4);
-                wavStream.Write(writeBuffer4);
-
-                Encoding.ASCII.GetBytes(header.Subchunk1ID, writeBuffer4);
-                wavStream.Write(writeBuffer4);
-
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, header.Subchunk1Size);
-                wavStream.Write(writeBuffer4);
-
-                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, header.AudioFormat);
-                wavStream.Write(writeBuffer2);
-
-                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, header.NumChannels);
-                wavStream.Write(writeBuffer2);
-
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, header.SampleRate);
-                wavStream.Write(writeBuffer4);
-
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, header.ByteRate);
-                wavStream.Write(writeBuffer4);
-
-                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, header.BlockAlign);
-                wavStream.Write(writeBuffer2);
-
-                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, header.BitsPerSample);
-                wavStream.Write(writeBuffer2);
-
-                Encoding.ASCII.GetBytes(header.Subchunk2Id, writeBuffer4);
-                wavStream.Write(writeBuffer4);
-
-                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, header.Subchunk2Size);
-                wavStream.Write(writeBuffer4);
-            }
-            catch
-            {
-                throw new Exception("Write WAV header error.");
-            }
-        }
-
-        WavHeader GetWavHeader(Stream wavStream)
-        {
-            Span<byte> readBuffer2 = stackalloc byte[2];
-            Span<byte> readBuffer4 = stackalloc byte[4];
-
-            wavStream.Position = 0;
-
-            WavHeader header = new WavHeader();
-
-            try
-            {
-                wavStream.Read(readBuffer4);
-                header.ChunkId = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
-
-                wavStream.Read(readBuffer4);
-                header.ChunkSize = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
-
-                wavStream.Read(readBuffer4);
-                header.Format = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
-
-                wavStream.Read(readBuffer4);
-                header.Subchunk1ID = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
-
-                wavStream.Read(readBuffer4);
-                header.Subchunk1Size = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
-
-                wavStream.Read(readBuffer2);
-                header.AudioFormat = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
-
-                wavStream.Read(readBuffer2);
-                header.NumChannels = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
-
-                wavStream.Read(readBuffer4);
-                header.SampleRate = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
-
-                wavStream.Read(readBuffer4);
-                header.ByteRate = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
-
-                wavStream.Read(readBuffer2);
-                header.BlockAlign = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
-
-                wavStream.Read(readBuffer2);
-                header.BitsPerSample = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
-
-                wavStream.Read(readBuffer4);
-                header.Subchunk2Id = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
-
-                wavStream.Read(readBuffer4);
-                header.Subchunk2Size = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
-            }
-            catch
-            {
-                throw new Exception("Non-standard WAV file.");
-            }
-
-            return header;
         }
 
         unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir)
@@ -297,7 +106,7 @@ namespace Alsa.Net.Internal
             }
         }
 
-        unsafe void ReadStream(Stream saveStream, WavHeader header, ref IntPtr @params, ref int dir)
+        unsafe void ReadStream(Stream saveStream, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
         {
             ulong frames, bufferSize;
 
@@ -313,7 +122,7 @@ namespace Alsa.Net.Internal
 
             fixed (byte* buffer = readBuffer)
             {
-                for (int i = 0; i < (int)(header.Subchunk2Size / bufferSize); i++)
+                while (!cancellationToken.IsCancellationRequested)
                 {
                     _errorNum = InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames);
                     ThrowErrorMessage("Can not read data from the device.");
@@ -414,6 +223,8 @@ namespace Alsa.Net.Internal
 
         void SetPlaybackMute(bool isMute)
         {
+            _playbackMute = isMute;
+
             OpenMixer();
 
             _errorNum = InteropAlsa.snd_mixer_selem_set_playback_switch_all(_elem, isMute ? 0 : 1);
@@ -424,6 +235,8 @@ namespace Alsa.Net.Internal
 
         void SetRecordingMute(bool isMute)
         {
+            _recordingMute = isMute;
+
             OpenMixer();
 
             _errorNum = InteropAlsa.snd_mixer_selem_set_playback_switch_all(_elem, isMute ? 0 : 1);
@@ -542,16 +355,6 @@ namespace Alsa.Net.Internal
                 Dispose();
                 throw new Exception($"{message}\nError {code}. {errorMsg}.");
             }
-        }
-
-        public Task Record(string savePath, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task Record(Stream outputStream, CancellationToken cancellationToken)
-        {
-            throw new NotImplementedException();
         }
     }
 }

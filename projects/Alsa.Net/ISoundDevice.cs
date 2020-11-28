@@ -53,9 +53,7 @@ namespace Alsa.Net
         /// <param name="second">Recording duration(In seconds).</param>
         /// <param name="savePath">Recording save path.</param>
         void Record(uint second, string savePath);
-
-        Task Record(string savePath, CancellationToken cancellationToken);
-        Task Record(Stream outputStream, CancellationToken cancellationToken);
+        void Record(Stream outputStream, CancellationToken cancellationToken);
 
         /// <summary>
         /// Sound recording.

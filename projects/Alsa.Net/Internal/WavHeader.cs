@@ -1,4 +1,9 @@
-﻿namespace Alsa.Net.Internal
+﻿using System;
+using System.Buffers.Binary;
+using System.IO;
+using System.Text;
+
+namespace Alsa.Net.Internal
 {
     struct WavHeader
     {
@@ -27,5 +32,137 @@
         public char[] Subchunk2Id { get; set; }
 
         public uint Subchunk2Size { get; set; }
+
+        public void WriteToStream(Stream wavStream)
+        {
+            Span<byte> writeBuffer2 = stackalloc byte[2];
+            Span<byte> writeBuffer4 = stackalloc byte[4];
+
+            wavStream.Position = 0;
+
+            try
+            {
+                Encoding.ASCII.GetBytes(ChunkId, writeBuffer4);
+                wavStream.Write(writeBuffer4);
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, ChunkSize);
+                wavStream.Write(writeBuffer4);
+
+                Encoding.ASCII.GetBytes(Format, writeBuffer4);
+                wavStream.Write(writeBuffer4);
+
+                Encoding.ASCII.GetBytes(Subchunk1ID, writeBuffer4);
+                wavStream.Write(writeBuffer4);
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, Subchunk1Size);
+                wavStream.Write(writeBuffer4);
+
+                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, AudioFormat);
+                wavStream.Write(writeBuffer2);
+
+                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, NumChannels);
+                wavStream.Write(writeBuffer2);
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, SampleRate);
+                wavStream.Write(writeBuffer4);
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, ByteRate);
+                wavStream.Write(writeBuffer4);
+
+                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, BlockAlign);
+                wavStream.Write(writeBuffer2);
+
+                BinaryPrimitives.WriteUInt16LittleEndian(writeBuffer2, BitsPerSample);
+                wavStream.Write(writeBuffer2);
+
+                Encoding.ASCII.GetBytes(Subchunk2Id, writeBuffer4);
+                wavStream.Write(writeBuffer4);
+
+                BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, Subchunk2Size);
+                wavStream.Write(writeBuffer4);
+            }
+            catch
+            {
+                throw new Exception("Write WAV header error.");
+            }
+        }
+
+        public static WavHeader Build(uint seconds, uint sampleRate, ushort channels, ushort bitsPerSample)
+        {
+            return new WavHeader
+            {
+                ChunkId = new[] { 'R', 'I', 'F', 'F' },
+                ChunkSize = seconds * sampleRate * bitsPerSample * channels / 8 + 36,
+                Format = new[] { 'W', 'A', 'V', 'E' },
+                Subchunk1ID = new[] { 'f', 'm', 't', ' ' },
+                Subchunk1Size = 16,
+                AudioFormat = 1,
+                NumChannels = channels,
+                SampleRate = sampleRate,
+                ByteRate = sampleRate * bitsPerSample * channels / 8,
+                BlockAlign = (ushort)(bitsPerSample * channels / 8),
+                BitsPerSample = bitsPerSample,
+                Subchunk2Id = new[] { 'd', 'a', 't', 'a' },
+                Subchunk2Size = seconds * sampleRate * bitsPerSample * channels / 8
+            };
+        }
+
+        public static WavHeader FromStream(Stream wavStream)
+        {
+            Span<byte> readBuffer2 = stackalloc byte[2];
+            Span<byte> readBuffer4 = stackalloc byte[4];
+
+            wavStream.Position = 0;
+
+            WavHeader header = new WavHeader();
+
+            try
+            {
+                wavStream.Read(readBuffer4);
+                header.ChunkId = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
+
+                wavStream.Read(readBuffer4);
+                header.ChunkSize = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
+
+                wavStream.Read(readBuffer4);
+                header.Format = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
+
+                wavStream.Read(readBuffer4);
+                header.Subchunk1ID = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
+
+                wavStream.Read(readBuffer4);
+                header.Subchunk1Size = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
+
+                wavStream.Read(readBuffer2);
+                header.AudioFormat = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
+
+                wavStream.Read(readBuffer2);
+                header.NumChannels = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
+
+                wavStream.Read(readBuffer4);
+                header.SampleRate = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
+
+                wavStream.Read(readBuffer4);
+                header.ByteRate = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
+
+                wavStream.Read(readBuffer2);
+                header.BlockAlign = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
+
+                wavStream.Read(readBuffer2);
+                header.BitsPerSample = BinaryPrimitives.ReadUInt16LittleEndian(readBuffer2);
+
+                wavStream.Read(readBuffer4);
+                header.Subchunk2Id = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
+
+                wavStream.Read(readBuffer4);
+                header.Subchunk2Size = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
+            }
+            catch
+            {
+                throw new Exception("Non-standard WAV file.");
+            }
+
+            return header;
+        }
     }
 }
