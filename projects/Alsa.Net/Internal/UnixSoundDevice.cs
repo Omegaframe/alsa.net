@@ -28,8 +28,6 @@ namespace Alsa.Net.Internal
         public UnixSoundDevice(SoundDeviceSettings settings)
         {
             Settings = settings;
-            PlaybackMute = false;
-            RecordingMute = false;
         }
 
         public void Play(string wavPath)
