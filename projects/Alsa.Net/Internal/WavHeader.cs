@@ -87,7 +87,7 @@ namespace Alsa.Net.Internal
             }
         }
 
-        public static WavHeader Build(uint seconds, uint sampleRate, ushort channels, ushort bitsPerSample)
+        public static WavHeader Build(uint sampleRate, ushort channels, ushort bitsPerSample)
         {
             return new WavHeader
             {
@@ -164,5 +164,7 @@ namespace Alsa.Net.Internal
 
             return header;
         }
+
+        public static int Size => 44;
     }
 }
