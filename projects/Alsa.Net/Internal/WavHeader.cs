@@ -92,7 +92,7 @@ namespace Alsa.Net.Internal
             return new WavHeader
             {
                 ChunkId = new[] { 'R', 'I', 'F', 'F' },
-                ChunkSize = seconds * sampleRate * bitsPerSample * channels / 8 + 36,
+                ChunkSize = 0xFFFFFFFF,
                 Format = new[] { 'W', 'A', 'V', 'E' },
                 Subchunk1ID = new[] { 'f', 'm', 't', ' ' },
                 Subchunk1Size = 16,
@@ -103,7 +103,7 @@ namespace Alsa.Net.Internal
                 BlockAlign = (ushort)(bitsPerSample * channels / 8),
                 BitsPerSample = bitsPerSample,
                 Subchunk2Id = new[] { 'd', 'a', 't', 'a' },
-                Subchunk2Size = seconds * sampleRate * bitsPerSample * channels / 8
+                Subchunk2Size = 0xFFFFFFFF
             };
         }
 
