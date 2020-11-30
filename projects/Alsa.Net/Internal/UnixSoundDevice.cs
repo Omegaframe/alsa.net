@@ -7,9 +7,9 @@ namespace Alsa.Net.Internal
 {
     class UnixSoundDevice : ISoundDevice
     {
-        static readonly object playbackInitializationLock = new object();
-        static readonly object recordingInitializationLock = new object();
-        static readonly object mixerInitializationLock = new object();
+        static readonly object PlaybackInitializationLock = new object();
+        static readonly object RecordingInitializationLock = new object();
+        static readonly object MixerInitializationLock = new object();
 
         public SoundDeviceSettings Settings { get; }
         public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
@@ -77,7 +77,7 @@ namespace Alsa.Net.Internal
 
         unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir)
         {
-            ulong frames, bufferSize;
+            ulong frames;
 
             fixed (int* dirP = &dir)
             {
@@ -85,9 +85,9 @@ namespace Alsa.Net.Internal
                 ThrowErrorMessage("Can not get period size.");
             }
 
-            bufferSize = frames * header.BlockAlign;
+            var bufferSize = frames * header.BlockAlign;
             // In Interop, the frames is defined as ulong. But actucally, the value of bufferSize won't be too big.
-            byte[] readBuffer = new byte[(int)bufferSize];
+            var readBuffer = new byte[(int)bufferSize];
             // Jump wav header.
             wavStream.Position = 44;
 
@@ -103,7 +103,7 @@ namespace Alsa.Net.Internal
 
         unsafe void ReadStream(Stream saveStream, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
         {
-            ulong frames, bufferSize;
+            ulong frames;
 
             fixed (int* dirP = &dir)
             {
@@ -111,8 +111,8 @@ namespace Alsa.Net.Internal
                 ThrowErrorMessage("Can not get period size.");
             }
 
-            bufferSize = frames * header.BlockAlign;
-            byte[] readBuffer = new byte[(int)bufferSize];
+            var bufferSize = frames * header.BlockAlign;
+            var readBuffer = new byte[(int)bufferSize];
             saveStream.Position = 44;
 
             fixed (byte* buffer = readBuffer)
@@ -139,7 +139,7 @@ namespace Alsa.Net.Internal
             _errorNum = InteropAlsa.snd_pcm_hw_params_set_access(pcm, @params, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED);
             ThrowErrorMessage("Can not set access mode.");
 
-            _errorNum = (int)(header.BitsPerSample / 8) switch
+            _errorNum = (header.BitsPerSample / 8) switch
             {
                 1 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_U8),
                 2 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S16_LE),
@@ -162,7 +162,7 @@ namespace Alsa.Net.Internal
             ThrowErrorMessage("Can not set hardware parameters.");
         }
 
-        unsafe void SetPlaybackVolume(long volume)
+        void SetPlaybackVolume(long volume)
         {
             OpenMixer();
 
@@ -190,7 +190,7 @@ namespace Alsa.Net.Internal
             return (volumeLeft + volumeRight) / 2;
         }
 
-        unsafe void SetRecordingVolume(long volume)
+        void SetRecordingVolume(long volume)
         {
             OpenMixer();
 
@@ -247,7 +247,7 @@ namespace Alsa.Net.Internal
                 return;
             }
 
-            lock (playbackInitializationLock)
+            lock (PlaybackInitializationLock)
             {
                 _errorNum = InteropAlsa.snd_pcm_open(ref _playbackPcm, Settings.PlaybackDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0);
                 ThrowErrorMessage("Can not open playback device.");
@@ -275,7 +275,7 @@ namespace Alsa.Net.Internal
                 return;
             }
 
-            lock (recordingInitializationLock)
+            lock (RecordingInitializationLock)
             {
                 _errorNum = InteropAlsa.snd_pcm_open(ref _recordingPcm, Settings.RecordingDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_CAPTURE, 0);
                 ThrowErrorMessage("Can not open recording device.");
@@ -303,7 +303,7 @@ namespace Alsa.Net.Internal
                 return;
             }
 
-            lock (mixerInitializationLock)
+            lock (MixerInitializationLock)
             {
                 _errorNum = InteropAlsa.snd_mixer_open(ref _mixer, 0);
                 ThrowErrorMessage("Can not open sound device mixer.");
