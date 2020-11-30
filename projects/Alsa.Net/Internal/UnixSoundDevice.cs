@@ -77,7 +77,7 @@ namespace Alsa.Net.Internal
             ulong frames;
 
             fixed (int* dirP = &dir)
-                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), "Can not get period size.");
+                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), ExceptionMessages.CanNotGetPeriodSize);
 
             var bufferSize = frames * header.BlockAlign;
             var readBuffer = new byte[(int)bufferSize];
@@ -87,7 +87,7 @@ namespace Alsa.Net.Internal
             fixed (byte* buffer = readBuffer)
             {
                 while (wavStream.Read(readBuffer) != 0)
-                    ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), "Can not write data to the device.");
+                    ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
             }
         }
 
@@ -96,7 +96,7 @@ namespace Alsa.Net.Internal
             ulong frames;
 
             fixed (int* dirP = &dir)
-                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), "Can not get period size.");
+                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), ExceptionMessages.CanNotGetPeriodSize);
 
             var bufferSize = frames * header.BlockAlign;
             var readBuffer = new byte[(int)bufferSize];
@@ -107,7 +107,7 @@ namespace Alsa.Net.Internal
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), "Can not read data from the device.");
+                    ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
                     saveStream.Write(readBuffer);
                 }
             }
@@ -117,34 +117,34 @@ namespace Alsa.Net.Internal
 
         unsafe void PcmInitialize(IntPtr pcm, WavHeader header, ref IntPtr @params, ref int dir)
         {
-            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_malloc(ref @params), "Can not allocate parameters object.");
-            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_any(pcm, @params), "Can not fill parameters object.");
-            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_set_access(pcm, @params, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED), "Can not set access mode.");
+            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_malloc(ref @params), ExceptionMessages.CanNotAllocateParameters);
+            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_any(pcm, @params), ExceptionMessages.CanNotFillParameters);
+            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_set_access(pcm, @params, snd_pcm_access_t.SND_PCM_ACCESS_RW_INTERLEAVED), ExceptionMessages.CanNotSetAccessMode);
 
             var formatResult = (header.BitsPerSample / 8) switch
             {
                 1 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_U8),
                 2 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S16_LE),
                 3 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S24_LE),
-                _ => throw new Exception("Bits per sample error. Please reset the value of RecordingBitsPerSample.") // todo: richtige exception verwenden
+                _ => throw new AlsaDeviceException(ExceptionMessages.BitsPerSampleError)
             };
-            ThrowErrorMessage(formatResult, "Can not set format.");
+            ThrowErrorMessage(formatResult, ExceptionMessages.CanNotSetFormat);
 
-            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_set_channels(pcm, @params, header.NumChannels), "Can not set channel.");
+            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_set_channels(pcm, @params, header.NumChannels), ExceptionMessages.CanNotSetChannel);
 
             var val = header.SampleRate;
             fixed (int* dirP = &dir)
-                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_set_rate_near(pcm, @params, &val, dirP), "Can not set rate.");
+                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_set_rate_near(pcm, @params, &val, dirP), ExceptionMessages.CanNotSetRate);
 
-            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params(pcm, @params), "Can not set hardware parameters.");
+            ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params(pcm, @params), ExceptionMessages.CanNotSetHwParams);
         }
 
         void SetPlaybackVolume(long volume)
         {
             OpenMixer();
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume), "Set playback volume error.");
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume), "Set playback volume error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume), ExceptionMessages.CanNotSetVolume);
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume), ExceptionMessages.CanNotSetVolume);
 
             CloseMixer();
         }
@@ -156,8 +156,8 @@ namespace Alsa.Net.Internal
 
             OpenMixer();
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft), "Get playback volume error.");
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight), "Get playback volume error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft), ExceptionMessages.CanNotSetVolume);
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_playback_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight), ExceptionMessages.CanNotSetVolume);
 
             CloseMixer();
 
@@ -168,8 +168,8 @@ namespace Alsa.Net.Internal
         {
             OpenMixer();
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume), "Set recording volume error.");
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume), "Set recording volume error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, volume), ExceptionMessages.CanNotSetVolume);
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, volume), ExceptionMessages.CanNotSetVolume);
 
             CloseMixer();
         }
@@ -180,8 +180,8 @@ namespace Alsa.Net.Internal
 
             OpenMixer();
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft), "Get recording volume error.");
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight), "Get recording volume error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_LEFT, &volumeLeft), ExceptionMessages.CanNotSetVolume);
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_get_capture_volume(_mixelElement, snd_mixer_selem_channel_id.SND_MIXER_SCHN_FRONT_RIGHT, &volumeRight), ExceptionMessages.CanNotSetVolume);
 
             CloseMixer();
 
@@ -194,7 +194,7 @@ namespace Alsa.Net.Internal
 
             OpenMixer();
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_switch_all(_mixelElement, isMute ? 0 : 1), "Set playback mute error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_switch_all(_mixelElement, isMute ? 0 : 1), ExceptionMessages.CanNotSetMute);
 
             CloseMixer();
         }
@@ -205,7 +205,7 @@ namespace Alsa.Net.Internal
 
             OpenMixer();
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_switch_all(_mixelElement, isMute ? 0 : 1), "Set recording mute error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_selem_set_playback_switch_all(_mixelElement, isMute ? 0 : 1), ExceptionMessages.CanNotSetMute);
 
             CloseMixer();
         }
@@ -216,7 +216,7 @@ namespace Alsa.Net.Internal
                 return;
 
             lock (PlaybackInitializationLock)
-                ThrowErrorMessage(InteropAlsa.snd_pcm_open(ref _playbackPcm, Settings.PlaybackDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0), "Can not open playback device.");
+                ThrowErrorMessage(InteropAlsa.snd_pcm_open(ref _playbackPcm, Settings.PlaybackDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_PLAYBACK, 0), ExceptionMessages.CanNotOpenPlayback);
         }
 
         void ClosePlaybackPcm()
@@ -224,8 +224,8 @@ namespace Alsa.Net.Internal
             if (_playbackPcm == default)
                 return;
 
-            ThrowErrorMessage(InteropAlsa.snd_pcm_drop(_playbackPcm), "Drop playback device error.");
-            ThrowErrorMessage(InteropAlsa.snd_pcm_close(_playbackPcm), "Close playback device error.");
+            ThrowErrorMessage(InteropAlsa.snd_pcm_drop(_playbackPcm), ExceptionMessages.CanNotDropDevice);
+            ThrowErrorMessage(InteropAlsa.snd_pcm_close(_playbackPcm), ExceptionMessages.CanNotCloseDevice);
 
             _playbackPcm = default;
         }
@@ -236,7 +236,7 @@ namespace Alsa.Net.Internal
                 return;
 
             lock (RecordingInitializationLock)
-                ThrowErrorMessage(InteropAlsa.snd_pcm_open(ref _recordingPcm, Settings.RecordingDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_CAPTURE, 0), "Can not open recording device.");
+                ThrowErrorMessage(InteropAlsa.snd_pcm_open(ref _recordingPcm, Settings.RecordingDeviceName, snd_pcm_stream_t.SND_PCM_STREAM_CAPTURE, 0), ExceptionMessages.CanNotOpenRecording);
         }
 
         void CloseRecordingPcm()
@@ -244,8 +244,8 @@ namespace Alsa.Net.Internal
             if (_recordingPcm == default)
                 return;
 
-            ThrowErrorMessage(InteropAlsa.snd_pcm_drop(_recordingPcm), "Drop recording device error.");
-            ThrowErrorMessage(InteropAlsa.snd_pcm_close(_recordingPcm), "Close recording device error.");
+            ThrowErrorMessage(InteropAlsa.snd_pcm_drop(_recordingPcm), ExceptionMessages.CanNotDropDevice);
+            ThrowErrorMessage(InteropAlsa.snd_pcm_close(_recordingPcm), ExceptionMessages.CanNotCloseDevice);
 
             _recordingPcm = default;
         }
@@ -257,10 +257,10 @@ namespace Alsa.Net.Internal
 
             lock (MixerInitializationLock)
             {
-                ThrowErrorMessage(InteropAlsa.snd_mixer_open(ref _mixer, 0), "Can not open sound device mixer.");
-                ThrowErrorMessage(InteropAlsa.snd_mixer_attach(_mixer, Settings.MixerDeviceName), "Can not attach sound device mixer.");
-                ThrowErrorMessage(InteropAlsa.snd_mixer_selem_register(_mixer, IntPtr.Zero, IntPtr.Zero), "Can not register sound device mixer.");
-                ThrowErrorMessage(InteropAlsa.snd_mixer_load(_mixer), "Can not load sound device mixer.");
+                ThrowErrorMessage(InteropAlsa.snd_mixer_open(ref _mixer, 0), ExceptionMessages.CanNotOpenMixer);
+                ThrowErrorMessage(InteropAlsa.snd_mixer_attach(_mixer, Settings.MixerDeviceName), ExceptionMessages.CanNotAttachMixer);
+                ThrowErrorMessage(InteropAlsa.snd_mixer_selem_register(_mixer, IntPtr.Zero, IntPtr.Zero), ExceptionMessages.CanNotRegisterMixer);
+                ThrowErrorMessage(InteropAlsa.snd_mixer_load(_mixer), ExceptionMessages.CanNotLoadMixer);
 
                 _mixelElement = InteropAlsa.snd_mixer_first_elem(_mixer);
             }
@@ -271,7 +271,7 @@ namespace Alsa.Net.Internal
             if (_mixer == default)
                 return;
 
-            ThrowErrorMessage(InteropAlsa.snd_mixer_close(_mixer), "Close sound device mixer error.");
+            ThrowErrorMessage(InteropAlsa.snd_mixer_close(_mixer), ExceptionMessages.CanNotCloseMixer);
 
             _mixer = default;
             _mixelElement = default;
