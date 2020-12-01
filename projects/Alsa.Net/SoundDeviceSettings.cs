@@ -1,5 +1,8 @@
 ﻿namespace Alsa.Net
 {
+    /// <summary>
+    /// settings on how to connect to and use your alsa devices
+    /// </summary>
     public class SoundDeviceSettings
     {
         /// <summary>

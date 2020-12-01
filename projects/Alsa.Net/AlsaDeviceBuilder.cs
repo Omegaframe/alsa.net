@@ -2,6 +2,9 @@
 
 namespace Alsa.Net
 {
+    /// <summary>
+    /// connect your sound device configuration to a virtual interface
+    /// </summary>
     public static class AlsaDeviceBuilder
     {
         /// <summary>

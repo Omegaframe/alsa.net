@@ -13,7 +13,7 @@ namespace Alsa.Net.Internal
 
         public char[] Format { get; set; }
 
-        public char[] Subchunk1ID { get; set; }
+        public char[] Subchunk1Id { get; set; }
 
         public uint Subchunk1Size { get; set; }
 
@@ -51,7 +51,7 @@ namespace Alsa.Net.Internal
                 Encoding.ASCII.GetBytes(Format, writeBuffer4);
                 wavStream.Write(writeBuffer4);
 
-                Encoding.ASCII.GetBytes(Subchunk1ID, writeBuffer4);
+                Encoding.ASCII.GetBytes(Subchunk1Id, writeBuffer4);
                 wavStream.Write(writeBuffer4);
 
                 BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, Subchunk1Size);
@@ -94,7 +94,7 @@ namespace Alsa.Net.Internal
                 ChunkId = new[] { 'R', 'I', 'F', 'F' },
                 ChunkSize = 0xFFFFFFFF,
                 Format = new[] { 'W', 'A', 'V', 'E' },
-                Subchunk1ID = new[] { 'f', 'm', 't', ' ' },
+                Subchunk1Id = new[] { 'f', 'm', 't', ' ' },
                 Subchunk1Size = 16,
                 AudioFormat = 1,
                 NumChannels = channels,
@@ -128,7 +128,7 @@ namespace Alsa.Net.Internal
                 header.Format = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
 
                 wavStream.Read(readBuffer4);
-                header.Subchunk1ID = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
+                header.Subchunk1Id = Encoding.ASCII.GetString(readBuffer4).ToCharArray();
 
                 wavStream.Read(readBuffer4);
                 header.Subchunk1Size = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);

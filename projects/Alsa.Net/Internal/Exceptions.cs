@@ -2,14 +2,21 @@
 
 namespace Alsa.Net.Internal
 {
+    /// <summary>
+    /// exception thrown when something goes wrong while transfering data between
+    /// managed code and alsa devices
+    /// </summary>
     public class AlsaDeviceException : Exception
     {
-        public AlsaDeviceException(string message) : base(message) { }
+        internal AlsaDeviceException(string message) : base(message) { }
     }
 
+    /// <summary>
+    /// exception thrown if something goes wrong with the pcm wav format
+    /// </summary>
     public class WavFormatException : Exception
     {
-        public WavFormatException(string message, Exception exception) : base(message.Replace("{MESSAGE}", exception.Message)) { }
+        internal WavFormatException(string message, Exception exception) : base(message.Replace("{MESSAGE}", exception.Message)) { }
     }
 
     static class ExceptionMessages
