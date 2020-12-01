@@ -7,6 +7,11 @@ namespace Alsa.Net.Internal
         public AlsaDeviceException(string message) : base(message) { }
     }
 
+    public class WavFormatException : Exception
+    {
+        public WavFormatException(string message, Exception exception) : base(message.Replace("{MESSAGE}", exception.Message)) { }
+    }
+
     static class ExceptionMessages
     {
         public const string CanNotGetPeriodSize = "Alsa Error: Can not get period size";
@@ -15,7 +20,7 @@ namespace Alsa.Net.Internal
         public const string CanNotAllocateParameters = "Alsa Error: Can not allocate parameters object";
         public const string CanNotFillParameters = "Alsa Error: Can not fill parameters object";
         public const string CanNotSetAccessMode = "Alsa Error: Can not set access mode";
-        public const string BitsPerSampleError = "Alsa Error: Bits per sample error. Please reset the value of RecordingBitsPerSample";
+        public const string BitsPerSampleError = "Alsa Error: Can not set bits per sample";
         public const string CanNotSetFormat = "Alsa Error: Can not set format";
         public const string CanNotSetChannel = "Alsa Error: Can not set channel";
         public const string CanNotSetRate = "Alsa Error: Can not set rate";
@@ -31,5 +36,8 @@ namespace Alsa.Net.Internal
         public const string CanNotRegisterMixer = "Alsa Error: Can not register sound device mixer";
         public const string CanNotLoadMixer = "Alsa Error: Can not load sound device mixer";
         public const string CanNotCloseMixer = "Alsa Error: Close sound device mixer error";
+
+        public const string UnableToWriteWavHeader = "WAV Error: Unable to write Header to Stream - {MESSAGE}";
+        public const string UnableToReadWavHeader = "WAV Error: Unable to read Header from Stream - {MESSAGE}";
     }
 }

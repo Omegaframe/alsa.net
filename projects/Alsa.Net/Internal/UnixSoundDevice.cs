@@ -292,7 +292,7 @@ namespace Alsa.Net.Internal
             var errorMsg = Marshal.PtrToStringAnsi(InteropAlsa.snd_strerror(errorNum));
 
             Dispose();
-            throw new Exception($"{message}\nError {errorNum}. {errorMsg}.");
+            throw new AlsaDeviceException($"{message}\nError {errorNum}. {errorMsg}.");
         }
     }
 }

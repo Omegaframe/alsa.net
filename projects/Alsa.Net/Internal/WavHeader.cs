@@ -81,9 +81,9 @@ namespace Alsa.Net.Internal
                 BinaryPrimitives.WriteUInt32LittleEndian(writeBuffer4, Subchunk2Size);
                 wavStream.Write(writeBuffer4);
             }
-            catch
+            catch (Exception ex)
             {
-                throw new Exception("Write WAV header error.");
+                throw new WavFormatException(ExceptionMessages.UnableToWriteWavHeader, ex);
             }
         }
 
@@ -157,9 +157,9 @@ namespace Alsa.Net.Internal
                 wavStream.Read(readBuffer4);
                 header.Subchunk2Size = BinaryPrimitives.ReadUInt32LittleEndian(readBuffer4);
             }
-            catch
+            catch (Exception exception)
             {
-                throw new Exception("Non-standard WAV file.");
+                throw new WavFormatException(ExceptionMessages.UnableToReadWavHeader, exception);
             }
 
             return header;

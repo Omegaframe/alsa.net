@@ -15,8 +15,9 @@ namespace Alsa.Net
         SoundDeviceSettings Settings { get; }
 
         /// <summary>
-        /// set or get the volume of the playback device
+        /// set or get the volume of the playback device.
         /// </summary>
+        /// <remarks>ensure this is supported by your device</remarks>
         long PlaybackVolume { get; set; }
 
         /// <summary>
@@ -27,6 +28,7 @@ namespace Alsa.Net
         /// <summary>
         /// set or get the current recording volume
         /// </summary>
+        /// <remarks>ensure this is supported by your device</remarks>
         long RecordingVolume { get; set; }
 
         /// <summary>

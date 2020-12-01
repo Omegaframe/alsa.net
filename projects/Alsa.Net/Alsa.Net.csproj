@@ -4,6 +4,13 @@
     <TargetFramework>netstandard2.1</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <Authors>Jörn Roddelkopf</Authors>
+    <Description>Simple .Net Standard Wrapper for ALSA on Unix devices. Supports Audio Playback, Recording and Mixer Devices. Requires libasound2-dev to be installed on target System.</Description>
+    <Company>Omegaframe</Company>
+    <Copyright>© 2020 Omegaframe</Copyright>
+    <PackageProjectUrl>http://omegaframe.com/opensource/alsa.net/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/zeroexploit/alsa.net</RepositoryUrl>
+    <PackageTags>alsa sound unix recording playback mixer advanced linux sound architecture</PackageTags>
   </PropertyGroup>
 
 </Project>
