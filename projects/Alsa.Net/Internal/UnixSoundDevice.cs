@@ -82,8 +82,6 @@ namespace Alsa.Net.Internal
             var bufferSize = frames * header.BlockAlign;
             var readBuffer = new byte[(int)bufferSize];
 
-            wavStream.Seek(WavHeader.Size, SeekOrigin.Begin);
-
             fixed (byte* buffer = readBuffer)
             {
                 while (wavStream.Read(readBuffer) != 0)
@@ -100,9 +98,7 @@ namespace Alsa.Net.Internal
 
             var bufferSize = frames * header.BlockAlign;
             var readBuffer = new byte[(int)bufferSize];
-
-            saveStream.Seek(WavHeader.Size, SeekOrigin.Begin);
-
+           
             fixed (byte* buffer = readBuffer)
             {
                 while (!cancellationToken.IsCancellationRequested)

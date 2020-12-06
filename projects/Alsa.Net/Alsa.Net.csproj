@@ -12,6 +12,7 @@
     <RepositoryUrl>https://github.com/zeroexploit/alsa.net</RepositoryUrl>
     <PackageTags>alsa sound unix recording playback mixer advanced linux sound architecture</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
 </Project>
