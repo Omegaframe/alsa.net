@@ -38,8 +38,6 @@ namespace Alsa.Net.Internal
             Span<byte> writeBuffer2 = stackalloc byte[2];
             Span<byte> writeBuffer4 = stackalloc byte[4];
 
-            wavStream.Position = 0;
-
             try
             {
                 Encoding.ASCII.GetBytes(ChunkId, writeBuffer4);
@@ -112,8 +110,6 @@ namespace Alsa.Net.Internal
             Span<byte> readBuffer2 = stackalloc byte[2];
             Span<byte> readBuffer4 = stackalloc byte[4];
 
-            wavStream.Position = 0;
-
             WavHeader header = new WavHeader();
 
             try
@@ -164,7 +160,5 @@ namespace Alsa.Net.Internal
 
             return header;
         }
-
-        public static int Size => 44;
     }
 }
