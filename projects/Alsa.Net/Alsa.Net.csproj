@@ -9,7 +9,7 @@
     <Company>Omegaframe</Company>
     <Copyright>© 2020 Omegaframe</Copyright>
     <PackageProjectUrl>http://omegaframe.com/opensource/alsa.net/</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/zeroexploit/alsa.net</RepositoryUrl>
+    <RepositoryUrl>https://github.com/omegaframe/alsa.net</RepositoryUrl>
     <PackageTags>alsa sound unix recording playback mixer advanced linux sound architecture</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <Version>1.0.3</Version>
