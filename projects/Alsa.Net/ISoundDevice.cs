@@ -37,7 +37,7 @@ namespace Alsa.Net
         bool RecordingMute { get; set; }
 
         /// <summary>
-        /// play a wav file on the playback devce
+        /// play a wav file on the playback device
         /// </summary>
         /// <param name="wavPath">path to wav file</param>
         void Play(string wavPath);
@@ -47,6 +47,20 @@ namespace Alsa.Net
         /// </summary>
         /// <param name="wavStream">stream of wav data to play</param>
         void Play(Stream wavStream);
+
+        /// <summary>
+        /// play a wav file on the playback device until end of file or cancellation
+        /// </summary>
+        /// <param name="wavPath">path to wav file</param>
+        /// <param name="cancellationToken">token to stop playback</param>
+        void Play(string wavPath, CancellationToken cancellationToken);
+
+        /// <summary>
+        /// play a wav stream until end of stream oder cancellation
+        /// </summary>
+        /// <param name="wavStream">stream of wav data to play</param>
+        /// /// <param name="cancellationToken">token to stop playback</param>
+        void Play(Stream wavStream, CancellationToken cancellationToken);
 
         /// <summary>
         /// record a wav file to the given path and length 

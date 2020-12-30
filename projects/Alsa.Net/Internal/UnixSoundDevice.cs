@@ -32,10 +32,21 @@ namespace Alsa.Net.Internal
         public void Play(string wavPath)
         {
             using var fs = File.Open(wavPath, FileMode.Open, FileAccess.Read, FileShare.Read);
-            Play(fs);
+            Play(fs, CancellationToken.None);
+        }
+
+        public void Play(string wavPath, CancellationToken cancellationToken)
+        {
+            using var fs = File.Open(wavPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+            Play(fs, cancellationToken);
         }
 
         public void Play(Stream wavStream)
+        {
+            Play(wavStream, CancellationToken.None);
+        }
+
+        public void Play(Stream wavStream, CancellationToken cancellationToken)
         {
             var parameter = new IntPtr();
             var dir = 0;
@@ -43,7 +54,7 @@ namespace Alsa.Net.Internal
 
             OpenPlaybackPcm();
             PcmInitialize(_playbackPcm, header, ref parameter, ref dir);
-            WriteStream(wavStream, header, ref parameter, ref dir);
+            WriteStream(wavStream, header, ref parameter, ref dir, cancellationToken);
             ClosePlaybackPcm();
         }
 
@@ -72,7 +83,7 @@ namespace Alsa.Net.Internal
             CloseRecordingPcm();
         }
 
-        unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir)
+        unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
         {
             ulong frames;
 
@@ -84,7 +95,7 @@ namespace Alsa.Net.Internal
 
             fixed (byte* buffer = readBuffer)
             {
-                while (wavStream.Read(readBuffer) != 0)
+                while (wavStream.Read(readBuffer) != 0 && !cancellationToken.IsCancellationRequested)
                     ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
             }
         }
@@ -98,7 +109,7 @@ namespace Alsa.Net.Internal
 
             var bufferSize = frames * header.BlockAlign;
             var readBuffer = new byte[(int)bufferSize];
-           
+
             fixed (byte* buffer = readBuffer)
             {
                 while (!cancellationToken.IsCancellationRequested)
