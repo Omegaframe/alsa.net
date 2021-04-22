@@ -231,7 +231,7 @@ namespace Alsa.Net.Internal
             if (_playbackPcm == default)
                 return;
 
-            ThrowErrorMessage(InteropAlsa.snd_pcm_drop(_playbackPcm), ExceptionMessages.CanNotDropDevice);
+            ThrowErrorMessage(InteropAlsa.snd_pcm_drain(_playbackPcm), ExceptionMessages.CanNotDropDevice);
             ThrowErrorMessage(InteropAlsa.snd_pcm_close(_playbackPcm), ExceptionMessages.CanNotCloseDevice);
 
             _playbackPcm = default;
