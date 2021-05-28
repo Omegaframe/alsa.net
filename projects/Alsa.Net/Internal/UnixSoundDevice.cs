@@ -251,7 +251,7 @@ namespace Alsa.Net.Internal
             if (_recordingPcm == default)
                 return;
 
-            ThrowErrorMessage(InteropAlsa.snd_pcm_drop(_recordingPcm), ExceptionMessages.CanNotDropDevice);
+            ThrowErrorMessage(InteropAlsa.snd_pcm_drain(_recordingPcm), ExceptionMessages.CanNotDropDevice);
             ThrowErrorMessage(InteropAlsa.snd_pcm_close(_recordingPcm), ExceptionMessages.CanNotCloseDevice);
 
             _recordingPcm = default;
