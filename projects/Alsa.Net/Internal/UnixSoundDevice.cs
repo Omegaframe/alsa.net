@@ -7,9 +7,9 @@ namespace Alsa.Net.Internal
 {
     class UnixSoundDevice : ISoundDevice
     {
-        static readonly object PlaybackInitializationLock = new object();
-        static readonly object RecordingInitializationLock = new object();
-        static readonly object MixerInitializationLock = new object();
+        static readonly object PlaybackInitializationLock = new();
+        static readonly object RecordingInitializationLock = new();
+        static readonly object MixerInitializationLock = new();
 
         public SoundDeviceSettings Settings { get; }
         public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
@@ -23,6 +23,7 @@ namespace Alsa.Net.Internal
         IntPtr _recordingPcm;
         IntPtr _mixer;
         IntPtr _mixelElement;
+        bool _wasDisposed;
 
         public UnixSoundDevice(SoundDeviceSettings settings)
         {
@@ -31,23 +32,35 @@ namespace Alsa.Net.Internal
 
         public void Play(string wavPath)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             using var fs = File.Open(wavPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             Play(fs, CancellationToken.None);
         }
 
         public void Play(string wavPath, CancellationToken cancellationToken)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             using var fs = File.Open(wavPath, FileMode.Open, FileAccess.Read, FileShare.Read);
             Play(fs, cancellationToken);
         }
 
         public void Play(Stream wavStream)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             Play(wavStream, CancellationToken.None);
         }
 
         public void Play(Stream wavStream, CancellationToken cancellationToken)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             var parameter = new IntPtr();
             var dir = 0;
             var header = WavHeader.FromStream(wavStream);
@@ -60,18 +73,27 @@ namespace Alsa.Net.Internal
 
         public void Record(uint second, string savePath)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             using var fs = File.Open(savePath, FileMode.Create, FileAccess.Write, FileShare.None);
             Record(second, fs);
         }
 
         public void Record(uint second, Stream saveStream)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             using var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(second));
             Record(saveStream, tokenSource.Token);
         }
 
         public void Record(Stream saveStream, CancellationToken token)
         {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
             var parameters = new IntPtr();
             var dir = 0;
             var header = WavHeader.Build(Settings.RecordingSampleRate, Settings.RecordingChannels, Settings.RecordingBitsPerSample);
@@ -95,7 +117,7 @@ namespace Alsa.Net.Internal
 
             fixed (byte* buffer = readBuffer)
             {
-                while (wavStream.Read(readBuffer) != 0 && !cancellationToken.IsCancellationRequested)
+                while (!_wasDisposed && !cancellationToken.IsCancellationRequested && wavStream.Read(readBuffer) != 0)
                     ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
             }
         }
@@ -112,7 +134,7 @@ namespace Alsa.Net.Internal
 
             fixed (byte* buffer = readBuffer)
             {
-                while (!cancellationToken.IsCancellationRequested)
+                while (!_wasDisposed && !cancellationToken.IsCancellationRequested)
                 {
                     ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
                     saveStream.Write(readBuffer);
@@ -286,6 +308,8 @@ namespace Alsa.Net.Internal
 
         public void Dispose()
         {
+            _wasDisposed = true;
+
             ClosePlaybackPcm();
             CloseRecordingPcm();
             CloseMixer();

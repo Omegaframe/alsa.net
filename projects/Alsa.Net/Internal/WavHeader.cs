@@ -110,7 +110,7 @@ namespace Alsa.Net.Internal
             Span<byte> readBuffer2 = stackalloc byte[2];
             Span<byte> readBuffer4 = stackalloc byte[4];
 
-            WavHeader header = new WavHeader();
+            var header = new WavHeader();
 
             try
             {
