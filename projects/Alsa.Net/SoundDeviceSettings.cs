@@ -37,5 +37,11 @@
         /// </summary>
         /// <remarks>check device specification for supported bit depths</remarks>
         public ushort RecordingBitsPerSample { get; set; } = 16;
+
+        /// <summary>
+        /// whether or not to flush stream buffers after each write. Default: false
+        /// </summary>
+        /// <remarks>Required for some devices to allow real time streaming with ffmpeg</remarks>
+        public bool FlushBuffers { get; set; } = false;
     }
 }

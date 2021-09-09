@@ -138,6 +138,9 @@ namespace Alsa.Net.Internal
                 {
                     ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
                     saveStream.Write(readBuffer);
+
+                    if (Settings.FlushBuffers)
+                        saveStream.Flush();
                 }
             }
 
