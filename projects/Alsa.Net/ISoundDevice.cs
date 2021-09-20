@@ -82,5 +82,12 @@ namespace Alsa.Net
         /// <param name="second">recording duration in seconds</param>
         /// <param name="saveStream">stream to write the wav data to</param>
         void Record(uint second, Stream saveStream);
+
+        /// <summary>
+        /// record wave data using the given callback mehtod every time new audio data is available
+        /// </summary>
+        /// <param name="onDataAvailable">callback action called if new audio data is available</param>
+        /// <param name="cancellationToken">token to cancel recording</param>
+        void Record(Action<byte[]> onDataAvailable, CancellationToken cancellationToken);
     }
 }
