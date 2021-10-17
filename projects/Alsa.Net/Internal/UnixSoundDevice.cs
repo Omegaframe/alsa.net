@@ -107,6 +107,27 @@ namespace Alsa.Net.Internal
             CloseRecordingPcm();
         }
 
+        public void Record(Action<byte[]> onDataAvailable, CancellationToken token)
+        {
+            if (_wasDisposed)
+                throw new ObjectDisposedException(nameof(UnixSoundDevice));
+
+            var parameters = new IntPtr();
+            var dir = 0;
+
+            var header = WavHeader.Build(Settings.RecordingSampleRate, Settings.RecordingChannels, Settings.RecordingBitsPerSample);
+            using (var memoryStream = new MemoryStream())
+            {
+                header.WriteToStream(memoryStream);
+                onDataAvailable?.Invoke(memoryStream.ToArray());
+            }
+
+            OpenRecordingPcm();
+            PcmInitialize(_recordingPcm, header, ref parameters, ref dir);
+            ReadStream(onDataAvailable, header, ref parameters, ref dir, token);
+            CloseRecordingPcm();
+        }
+
         unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
         {
             ulong frames;
@@ -152,6 +173,26 @@ namespace Alsa.Net.Internal
             }
 
             saveStream.Flush();
+        }
+
+        unsafe void ReadStream(Action<byte[]> onDataAvailable, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
+        {
+            ulong frames;
+
+            fixed (int* dirP = &dir)
+                ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), ExceptionMessages.CanNotGetPeriodSize);
+
+            var bufferSize = frames * header.BlockAlign;
+            var readBuffer = new byte[(int)bufferSize];
+
+            fixed (byte* buffer = readBuffer)
+            {
+                while (!_wasDisposed && !cancellationToken.IsCancellationRequested)
+                {
+                    ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
+                    onDataAvailable?.Invoke(readBuffer);
+                }
+            }
         }
 
         unsafe void PcmInitialize(IntPtr pcm, WavHeader header, ref IntPtr @params, ref int dir)
