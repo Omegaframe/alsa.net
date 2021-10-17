@@ -10,6 +10,8 @@ namespace Alsa.Net.Internal
         static readonly object PlaybackInitializationLock = new();
         static readonly object RecordingInitializationLock = new();
         static readonly object MixerInitializationLock = new();
+        readonly object ReadStreamLock = new();
+        readonly object WriteStreamLock = new();
 
         public SoundDeviceSettings Settings { get; }
         public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
@@ -118,7 +120,12 @@ namespace Alsa.Net.Internal
             fixed (byte* buffer = readBuffer)
             {
                 while (!_wasDisposed && !cancellationToken.IsCancellationRequested && wavStream.Read(readBuffer) != 0)
-                    ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
+                {
+                    lock (WriteStreamLock)
+                    {
+                        ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
+                    }
+                }
             }
         }
 
@@ -136,8 +143,11 @@ namespace Alsa.Net.Internal
             {
                 while (!_wasDisposed && !cancellationToken.IsCancellationRequested)
                 {
-                    ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
-                    saveStream.Write(readBuffer);
+                    lock (ReadStreamLock)
+                    {
+                        ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
+                        saveStream.Write(readBuffer);
+                    }
                 }
             }
 
@@ -310,9 +320,15 @@ namespace Alsa.Net.Internal
         {
             _wasDisposed = true;
 
-            ClosePlaybackPcm();
-            CloseRecordingPcm();
-            CloseMixer();
+            lock (ReadStreamLock)
+            {
+                lock (WriteStreamLock)
+                {
+                    ClosePlaybackPcm();
+                    CloseRecordingPcm();
+                    CloseMixer();
+                }
+            }
         }
 
         void ThrowErrorMessage(int errorNum, string message)
