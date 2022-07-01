@@ -10,8 +10,6 @@ namespace Alsa.Net.Internal
         static readonly object PlaybackInitializationLock = new();
         static readonly object RecordingInitializationLock = new();
         static readonly object MixerInitializationLock = new();
-        readonly object ReadStreamLock = new();
-        readonly object WriteStreamLock = new();
 
         public SoundDeviceSettings Settings { get; }
         public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
@@ -142,10 +140,7 @@ namespace Alsa.Net.Internal
             {
                 while (!_wasDisposed && !cancellationToken.IsCancellationRequested && wavStream.Read(readBuffer) != 0)
                 {
-                    lock (WriteStreamLock)
-                    {
-                        ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
-                    }
+                    ThrowErrorMessage(InteropAlsa.snd_pcm_writei(_playbackPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotWriteToDevice);
                 }
             }
         }
@@ -164,11 +159,8 @@ namespace Alsa.Net.Internal
             {
                 while (!_wasDisposed && !cancellationToken.IsCancellationRequested)
                 {
-                    lock (ReadStreamLock)
-                    {
-                        ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
-                        saveStream.Write(readBuffer);
-                    }
+                    ThrowErrorMessage(InteropAlsa.snd_pcm_readi(_recordingPcm, (IntPtr)buffer, frames), ExceptionMessages.CanNotReadFromDevice);
+                    saveStream.Write(readBuffer);
                 }
             }
 
@@ -359,17 +351,14 @@ namespace Alsa.Net.Internal
 
         public void Dispose()
         {
+            if (_wasDisposed)
+                return;
+
             _wasDisposed = true;
 
-            lock (ReadStreamLock)
-            {
-                lock (WriteStreamLock)
-                {
-                    ClosePlaybackPcm();
-                    CloseRecordingPcm();
-                    CloseMixer();
-                }
-            }
+            ClosePlaybackPcm();
+            CloseRecordingPcm();
+            CloseMixer();
         }
 
         void ThrowErrorMessage(int errorNum, string message)
@@ -378,9 +367,7 @@ namespace Alsa.Net.Internal
                 return;
 
             var errorMsg = Marshal.PtrToStringAnsi(InteropAlsa.snd_strerror(errorNum));
-
-            Dispose();
-            throw new AlsaDeviceException($"{message}\nError {errorNum}. {errorMsg}.");
+            throw new AlsaDeviceException($"{message}. Error {errorNum}. {errorMsg}.");
         }
     }
 }

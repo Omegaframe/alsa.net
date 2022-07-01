@@ -12,7 +12,7 @@
     <RepositoryUrl>https://github.com/omegaframe/alsa.net</RepositoryUrl>
     <PackageTags>alsa sound unix recording playback mixer advanced linux sound architecture</PackageTags>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Version>1.0.7</Version>
+    <Version>1.0.8</Version>
   </PropertyGroup>
 
 </Project>
