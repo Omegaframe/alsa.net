@@ -198,6 +198,7 @@ namespace Alsa.Net.Internal
                 1 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_U8),
                 2 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S16_LE),
                 3 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S24_LE),
+                4 => InteropAlsa.snd_pcm_hw_params_set_format(pcm, @params, snd_pcm_format_t.SND_PCM_FORMAT_S32_LE),
                 _ => throw new AlsaDeviceException(ExceptionMessages.BitsPerSampleError)
             };
             ThrowErrorMessage(formatResult, ExceptionMessages.CanNotSetFormat);
