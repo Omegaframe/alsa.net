@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Alsa.Net.Internal;
+﻿namespace Alsa.Net.Internal;
 
 class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
 {
@@ -9,9 +7,9 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
     static readonly object MixerInitializationLock = new();
 
     public SoundDeviceSettings Settings { get; } = settings;
-    public long PlaybackVolume { get => GetPlaybackVolume(); set => SetPlaybackVolume(value); }
+    public long PlaybackVolume { get => NativeWidth.FromNint(GetPlaybackVolume()); set => SetPlaybackVolume(NativeWidth.ToNint(value)); }
     public bool PlaybackMute { get => _playbackMute; set => SetPlaybackMute(value); }
-    public long RecordingVolume { get => GetRecordingVolume(); set => SetRecordingVolume(value); }
+    public long RecordingVolume { get => NativeWidth.FromNint(GetRecordingVolume()); set => SetRecordingVolume(NativeWidth.ToNint(value)); }
     public bool RecordingMute { get => _recordingMute; set => SetRecordingMute(value); }
 
     bool _playbackMute;
@@ -120,7 +118,7 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
 
     unsafe void WriteStream(Stream wavStream, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
     {
-        ulong frames;
+        nuint frames;
 
         fixed (int* dirP = &dir)
             ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), ExceptionMessages.CanNotGetPeriodSize);
@@ -139,7 +137,7 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
 
     unsafe void ReadStream(Stream saveStream, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
     {
-        ulong frames;
+        nuint frames;
 
         fixed (int* dirP = &dir)
             ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), ExceptionMessages.CanNotGetPeriodSize);
@@ -161,7 +159,7 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
 
     unsafe void ReadStream(Action<byte[]> onDataAvailable, WavHeader header, ref IntPtr @params, ref int dir, CancellationToken cancellationToken)
     {
-        ulong frames;
+        nuint frames;
 
         fixed (int* dirP = &dir)
             ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params_get_period_size(@params, &frames, dirP), ExceptionMessages.CanNotGetPeriodSize);
@@ -204,7 +202,7 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
         ThrowErrorMessage(InteropAlsa.snd_pcm_hw_params(pcm, @params), ExceptionMessages.CanNotSetHwParams);
     }
 
-    void SetPlaybackVolume(long volume)
+    void SetPlaybackVolume(nint volume)
     {
         OpenMixer();
 
@@ -214,10 +212,10 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
         CloseMixer();
     }
 
-    unsafe long GetPlaybackVolume()
+    unsafe nint GetPlaybackVolume()
     {
-        long volumeLeft;
-        long volumeRight;
+        nint volumeLeft;
+        nint volumeRight;
 
         OpenMixer();
 
@@ -229,7 +227,7 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
         return (volumeLeft + volumeRight) / 2;
     }
 
-    void SetRecordingVolume(long volume)
+    void SetRecordingVolume(nint volume)
     {
         OpenMixer();
 
@@ -239,9 +237,10 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
         CloseMixer();
     }
 
-    unsafe long GetRecordingVolume()
+    unsafe nint GetRecordingVolume()
     {
-        long volumeLeft, volumeRight;
+        nint volumeLeft;
+        nint volumeRight;
 
         OpenMixer();
 
@@ -362,7 +361,7 @@ class UnixSoundDevice(SoundDeviceSettings settings) : ISoundDevice
         if (errorNum >= 0)
             return;
 
-        var errorMsg = Marshal.PtrToStringAnsi(InteropAlsa.snd_strerror(errorNum));
+        var errorMsg = InteropAlsa.StrError(errorNum);
         throw new AlsaDeviceException($"{message}. Error {errorNum}. {errorMsg}.");
     }
 }
