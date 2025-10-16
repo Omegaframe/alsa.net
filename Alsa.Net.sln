@@ -7,13 +7,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Alsa.Net", "projects\Alsa.N
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{EC409656-6AEC-42F8-AE49-CA75186379F9}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.Recording", "projects\Example.Recording\Example.Recording.csproj", "{96C25702-6D77-449D-9C37-CF4725038A32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Example.Recording", "examples\Example.Recording\Example.Recording.csproj", "{96C25702-6D77-449D-9C37-CF4725038A32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.Playback", "projects\Example.Playback\Example.Playback.csproj", "{659B145E-A2FA-410F-9C2B-0B1CC0906953}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.Playback", "examples\Example.Playback\Example.Playback.csproj", "{659B145E-A2FA-410F-9C2B-0B1CC0906953}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.Mixer", "projects\Example.Mixer\Example.Mixer.csproj", "{A92053ED-0378-47FE-8136-CE8505909CB4}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.Mixer", "examples\Example.Mixer\Example.Mixer.csproj", "{A92053ED-0378-47FE-8136-CE8505909CB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.Configuration", "projects\Example.Configuration\Example.Configuration.csproj", "{87BF06EE-EEB9-498D-B7C0-7D7E28BFB0A3}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example.Configuration", "examples\Example.Configuration\Example.Configuration.csproj", "{87BF06EE-EEB9-498D-B7C0-7D7E28BFB0A3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
