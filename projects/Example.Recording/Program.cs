@@ -1,28 +1,24 @@
 ﻿using Alsa.Net;
-using System;
-using System.IO;
-using System.Threading;
 
-namespace Example.Recording
+namespace Example.Recording;
+
+class Program
 {
-    class Program
+    static void Main()
     {
-        static void Main()
-        {
-            // create virtual interface to system default audio device
-            using var alsaDevice = AlsaDeviceBuilder.Create(new SoundDeviceSettings());
+        // create virtual interface to system default audio device
+        using var alsaDevice = AlsaDeviceBuilder.Create(new SoundDeviceSettings());
 
-            // create stream to hold recorded data - will be pcm data including wav header
-            using var outputStream = new MemoryStream();
+        // create stream to hold recorded data - will be pcm data including wav header
+        using var outputStream = new MemoryStream();
 
-            // create a cancellation token to stop recording after 10s
-            using var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+        // create a cancellation token to stop recording after 10s
+        using var tokenSource = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
-            // actually record
-            alsaDevice.Record(outputStream, tokenSource.Token);
+        // actually record
+        alsaDevice.Record(outputStream, tokenSource.Token);
 
-            // alternative: record for 10s directly to file
-            //alsaDevice.Record(10, "output.wav");
-        }
+        // alternative: record for 10s directly to file
+        //alsaDevice.Record(10, "output.wav");
     }
 }
