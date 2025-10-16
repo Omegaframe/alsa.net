@@ -12,9 +12,17 @@
 		<Copyright>© 2025 Omegaframe</Copyright>
 		<PackageProjectUrl>http://omegaframe.com/opensource/alsa.net/</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/omegaframe/alsa.net</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageTags>alsa sound unix recording playback mixer advanced linux sound architecture</PackageTags>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<Version>1.0.9</Version>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+		<Version>1.0.10</Version>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<None Include="..\..\README.md" Pack="true" PackagePath="\"/>
+		<None Include="..\..\LICENSE.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 
 </Project>
